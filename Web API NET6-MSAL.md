@@ -122,6 +122,7 @@ In this step we will create the App registration (and underlying service princip
     - Microsoft.Identity.Client
     - Newtonsoft.Json
     ![Screenshot](/assets/MSAL-Packages.png)
+1. Run the console app
 1. A browser window will be open to allow you to authenticate
 1. After you authenticate, the console app should list the first 10 records of the Emissions table
     ![Screenshot](/assets/WebApi-NET6-result.png)

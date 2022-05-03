@@ -1,4 +1,4 @@
-# Create a Dataverse Synapse Link
+# Query MC4S data via Dataverse Synapse Link
 
 ## Prerequisites
 - An Azure Subscription linked to the same tenant where your Microsoft Cloud for Sustainability environment is deployed.
