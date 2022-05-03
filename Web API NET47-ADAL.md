@@ -7,9 +7,9 @@
 1. Go to http://make.powerplatform.com
 1. Make sure that you are in the right environment (check the `Environment` badge on the top right)
 1. Click on the settings icon on the top right and select `Developer resources`.
-    ![Screenshot](/assets/PowerApps%20Dev%20Settings.png)
+    <br/><img alt="Screenshot" src="./assets/PowerApps%20Dev%20Settings.png" width="400" />
 1. Take note of the Web API endpoint (you will need this later in this lab). Copy only the part of the URL from "https:" through ".com" **leaving off the /api/data/v9.x**
-    ![Screenshot](/assets/PowerApps%20Dev%20Settings2.png)
+    <br/><img alt="Screenshot" src="./assets/PowerApps%20Dev%20Settings2.png" width="400" />
 
 ### Create the AAD App Registration
 In this step we will create the App registration (and underlying service principal) that your app will use to run the Azure Active Directory delegate authentication. In other words, we will need this to get the user authenticate with their credentials and use the resulting authentication token to access the dataverse.
