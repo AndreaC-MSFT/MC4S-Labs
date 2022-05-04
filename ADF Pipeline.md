@@ -46,7 +46,7 @@ In this section we will create the storage account to which ADF pipeline will wr
 1. Create a new Storage Account resource
     - Give an arbitrary name such as _samc4s_
     - Select a region (preferably the same where your MC4S environment is deployed)
-    - As `Redundancy` select `Locally-reduntant storage (LRS)`
+    - As `Redundancy` select `Locally-redundant storage (LRS)`
     - Leave everything else as default and create the resource
     ![Screenshot](/assets/ADF-Storage.png)
 1. Once the storage account has been created, navigate to `Containers` and click to the `+ Container` button in the toolbar to create a new container
