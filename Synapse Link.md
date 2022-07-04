@@ -7,7 +7,7 @@
 ### Find out the Azure region in which your environment is deployed
 1. Go to http://make.powerplatform.com
 1. Make sure that you are in the right environment (check the `Environment` badge on the top right)
-1. Click `Data` > `Azure Synapse Link`
+1. Click `Dataverse` > `Azure Synapse Link`
 1. Click `New Link`
 1. In the `Select storage account` tab, take note of the Azure region. This is the region in which you need to create the Synapse workspace
 ![example screenshot](/assets/Environment%20Region.png)
@@ -18,26 +18,26 @@
     > Make sure you create the workspace in the region identified earlier in this guide.
 2. In the Azure Portal, navigate to the storage account you have created as part of the Synapse workspace creation
 3. Navigate to `Access Control (IAM)`
-4. Click `Add` > `Add role assignment` and assigne yourself the `Storage Blob Data Owner` role
+4. Ensure that your user has `Storage Blob Data Owner` role. If not, click `Add` > `Add role assignment` and assign yourself the `Storage Blob Data Owner` role
     > This is an important step as having the `Owner` or `Contributor` role at resource level is not enough in order to query data from Synapse
 
 ### Prepare the Dataverse tables to be linked to Synapse
 In order to be linked to Synapse, a dataverse table needs to have `tracking` enabled.
 1. Go to https://make.powerapps.com
-1. Navigate to `Data` > `Tables`
+1. Navigate to `Dataverse` > `Tables`
 1. Select `Managed` in the filter on the top right
 1. Click on the `Emission` table
-1. Click `Settings` in the toolbar
+1. Click `Properties`
 1. Expand `Advanced options`
 1. Make sure `Track changes` is enabled
 1. Click `Save`
 1. Do steps 4 to 8 again for the following tables:
-    - `Facilities`
+    - `Facility`
     - `Purchased energy`
     - `Fugitive emission`
 
 ### Create the Dataverse Synapse Link 
-1. Navigate to `Data` > `Azure Synapse Link`
+1. Navigate to `Dataverse` > `Azure Synapse Link`
 1. Click `New Link`
 1. make sure `Connect to your Azure Synapse workspace` is enabled and select the subscription, resource group, workspace and storage account.
 ![screenshot](assets/connect-to-workspace.png)
@@ -48,10 +48,6 @@ In order to be linked to Synapse, a dataverse table needs to have `tracking` ena
     - `Purchased energy`
     - `Fugitive emission`
 1. Click Save
-1. Navigate to `Data` > `Tables`
-1. Click on the ellipses on the right of the `Emission` table > click on `Azure Synapse Link` > click on the name of the link you have just created. This will enable the link for that table.
-![screenshot](/assets/Enable%20table%20link.png)
-1. Do the same for the other linked tables
 
 > For more details please follow [this guide](https://docs.microsoft.com/en-us/power-apps/maker/data-platform/azure-synapse-link-synapse)
 
