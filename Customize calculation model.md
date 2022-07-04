@@ -1,12 +1,18 @@
 # Customize calculation models
-
+In this lab we will create a custom calculation model based on custom Dataverse columns and a custom emission factor, custom factor mapping and custom reference data.
+In the fictitious scenario we calculate the emissions of one specific airline (_Contoso Airlines_) by looking at the travel duration rather than the distance.
+> The scenario in this lab has the sole purpose of demonstrating the flexibility of the calculation engine. The calculation methodology described in this scenario is not necessarily correct or accurate and is not intended to be used in production.   
 
 ## Prerequisites
+A Microsoft Sustainability Manager environment (trial or otherwise) with example data. 
 
 
 ## Steps
 ### Add the supporting columns into the CDM and related view and form
-0. Go to https://make.powerplatform.com
+In this section we will add the **Duration** and **Duration unit** columns to the **Business Travel** table. We will later use these columns in our custom calculation model.
+We will also add the two columns to the default view and form so that we can see them and edit them in Microsoft Sustainability Manager.
+
+1. Go to https://make.powerplatform.com
 0. Navigate to `Dataverse` > `Tables`
 0. Open the `Business Travel` table
     > If the table doesn't show up in the list, adjust the filter to `All` or `Custom`
@@ -34,7 +40,9 @@
 
 ### Add the reference data, emissions factor and emissions factor mapping required for the custom calculation model
 #### Add the hour unit
-0. In Microsoft Sustainability Manager navigate to `Settings` > `Unit groups`
+In this section we will add the **Hour** unit of measure so that we can use it to express the duration of the travel.
+
+1. In Microsoft Sustainability Manager navigate to `Settings` > `Unit groups`
 0. Click `New`
 0. Enter `Time` as Name. Leave all the other boxes blank and click `Save`.
         <br/><img alt="Screenshot" src="./assets/CalculationModel_UnitGroup.png" width="400" />
@@ -43,13 +51,18 @@
         <br/><img alt="Screenshot" src="./assets/CalculationModel_Unit.png" width="400" />
 > Optionally, you can add derivate units in the Time group (such as second, minute, day) and define the conversion factors. But this is not required by this lab.
 #### Add the Business Travel Type
-0. In Microsoft Sustainability Manager navigate to `Settings` > `Reference data`
+When we add an entry in the Business Travel table, we need something to indicate that the data refers to a Contoso Airlines flight. We will use the _Business travel type_ column to do so. That's why we need a entry for Contoso Airlines in the _Business travel types_ table.
+
+1. In Microsoft Sustainability Manager navigate to `Settings` > `Reference data`
 0. On the right of `Business travel types`  click `View`
 0. Click `New`
 0. Enter `Air travel - Contoso airlines` as `Name` and click `Save`
         <br/><img alt="Screenshot" src="./assets/CalculationModel_BusinessTravelType.png" width="400" />
+
 #### Add the Emission factor and related mapping
-0. In Microsoft Sustainability Manager navigate to `Data` > `Factor libraries`
+In this section we will add am emission factor to specify the quantity of greenhouse gasses emitted per hour by Contoso Airlines flights. We then create a mapping to make sure that that specific emission factor will be used whenever the _Business Travel Type_ is _Air travel - Contoso Airlines_. 
+
+1. In Microsoft Sustainability Manager navigate to `Data` > `Factor libraries`
 0. Click `Create new library`, name the library `My demo library`, set `Library type` as `Emission factor library` and click `Save`.
 0. In the newly created _My demo library_ go to the `Emission factors` tab and click `New Emission factor`
         <br/><img alt="Screenshot" src="./assets/CalculationModel_NewEmissionFactor.png" width="800" />
@@ -75,13 +88,15 @@
         <br/><img alt="Screenshot" src="./assets/CalculationModel_NewEmissionFactorMapping3.png" width="800" />
 0. Click `Save` to save the emission factor mapping.
 
-#### Create the custom calculation model
-0. Navigate to `Data` > `Calculation models`
+### Create the custom calculation model
+In this section we will create the actual calculation model that will use the custom columns as input for the calculation.
+
+1. Navigate to `Data` > `Calculation models`
 0. Click `New`
 0. Enter the following data for the _Source node_:
     - Category name: `Business travel by duration`
         > This is the name that will be given to the calculation model
-    - Activity data: select `Business travel` from teh list
+    - Activity data: select `Business travel` from the list
         > This is the source table for the calculation model
     - Calculation method: `Travel duration * EF`
         > This is for description purpose only and it does not impact the calculation in any way
@@ -100,10 +115,12 @@
     - Emission factor: select `Business travel type` from the `Emission factor mappings` list
         > Note that for the purpose of this lab we could even select the _emission factor_ `Air travel by duration`. But to make the calculation model more generic we are selecting an _emission factor mapping_ instead. This way we can reuse the same calculation model with multiple emission factors and mappings. For example we could add emission factors fro multiple aircraft or airlines or even extend it to ground transportation.
 
-    <br/><img alt="Screenshot" src="./assets/CalculationModel_ReportNode2.png" width="300" />
+        <br/><img alt="Screenshot" src="./assets/CalculationModel_ReportNode2.png" width="300" />
 0. Click `Save` to save the calculation model
 
-#### Add example data
+### Add example data
+In this section we will insert a fictitious flight in the _Business Travel_ table so that we will be able to test our calculation model.
+
 0. Navigate to `Data` > `Activity data`. At the right of `Business travel` (under Scope 3) click `View`.
 0. Click `New`
 0. Enter the following data:
@@ -115,42 +132,46 @@
     - Duration: `12`
     - Duration unit: `Hour`
 
-    <br/><img alt="Screenshot" src="./assets/CalculationModel_ExampleData.png" width="800" />
+        <br/><img alt="Screenshot" src="./assets/CalculationModel_ExampleData.png" width="800" />
 0. Click `Save`
 
-#### Create the custom calculation profile
-0. Navigate to `Data` > `Calculation profiles`
+### Create the custom calculation profile
+The calculation model in itself is just a definition. In order to actually execute a calculation we need a **calculation profile**. Let's create one to execute our custom calculation model.
+
+1. Navigate to `Data` > `Calculation profiles`
 0. Click `New calculation profile`
 0. In the _Create_ section enter the following information:
     - Calculation profile name: `Business travel by duration`
     - Emission source: select `Business travel` from the list
     - Activity data to include in calculation: add a new row filter with criteria `Business travel type` _Equals_ `Air travel - Contoso airlines`
         > This is important to avoid conflicts with the standard calculation model for Business Travels. We want to use our custom demo model only for specific _Business travel types_.
-    - Calculation model: select `Business travel by duration` from teh list
+    - Calculation model: select `Business travel by duration` from the list
         > This is the calculation model that we have just created
-    - Schedule: make sure to check teh option _Automatically run this calculation when data is refreshed_
+    - Schedule: make sure to check the option _Automatically run this calculation when data is refreshed_
 
-    <br/><img alt="Screenshot" src="./assets/CalculationModel_Profile1.png" width="800" />
+        <br/><img alt="Screenshot" src="./assets/CalculationModel_Profile1.png" width="800" />
 
 - Click `Next`. The emission calculation preview for the sample flight should appear. 
     <br/><img alt="Screenshot" src="./assets/CalculationModel_Profile2.png" width="800" />
 - Click `Save`
 
-#### Run the calculation and observe the results
-0. From the list of calculation profiles, select `Business travel by duration` and click `Run calculation`
+### Run the calculation and observe the results
+1. From the list of calculation profiles, select `Business travel by duration` and click `Run calculation`
     <br/><img alt="Screenshot" src="./assets/CalculationModel_Profile3.png" width="800" />
 0. The status of the profile should show as `Executing` at first and then become `Successful` after a few seconds.
-    > If the status doesn't update, click `Refresh` from teh toolbar
+    > If the status doesn't update, click `Refresh` from the toolbar
 0. Navigate to `Analytics` > `All emissions`
 0. Filter the list by `Activity type = Air travel - Contoso airlines`
 0. One item should appear. Click on it to open the detailed form. You should see something similar to this:
     <br/><img alt="Screenshot" src="./assets/CalculationModel_Result.png" width="800" />
 Notice that the greenhouse gasses have been calculated as per the custom calculation model and Microsoft Sustainability Manager has dynamically calculated the related CO₂E based on GWP factors.
 
-#### Isolate the standard Business travel calculation model to avoid conflicts
-0. Navigate to `Data` > `Calculation profiles`
+### Isolate the standard Business travel calculation model to avoid conflicts
+We want to make sure that only the custom calculation profile runs calculations for the _Business Travel_ entries that have _Air travel - Contoso Airlines_ as travel type. Therefore, we need to exclude such entries from the scope of the default calculation profile for business travel. 
+
+1. Navigate to `Data` > `Calculation profiles`
 0. Select `Business Travel Default Profile` and click `Edit`
-0. Under `Activity data to include in this calculation` add the following row filter: `Business travel type` _Does not Equals_ `Air travel - Contoso Airlines`
+0. Under `Activity data to include in this calculation` add the following row filter: `Business travel type` **Does not Equal** `Air travel - Contoso Airlines`
     <br/><img alt="Screenshot" src="./assets/CalculationModel_ProfileExisting.png" width="500" />
 0. Click `Next` and `Save`
 
