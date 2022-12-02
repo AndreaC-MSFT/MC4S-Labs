@@ -1,8 +1,28 @@
-# Accessing MC4S data via Dataverse API with interactive authentication on .NET 6 and MSAL
+# Accessing MC4S data via Dataverse API with non-interactive authentication using .NET 6 and MSAL
 
-> This tutorial implements the interactive authentication with delegation authentication. To use the server-to-server single-tenant authentication flow with client secret see [Accessing MC4S data via Dataverse API with non-interactive authentication using .NET 6 and Microsoft Authentication Library (MSAL)](/Web%20API%20NET6-MSAL%20non-interactive.md)
+> This tutorial implements the server-to-server single-tenant authentication flow with client secret. To use interactive authentication with delegation see [Accessing MC4S data via Dataverse API with interactive authentication on .NET 6 with Microsoft Authentication Library (MSAL)](/Web%20API%20NET6-MSAL.md)
 
 ## Steps
+### Create the AAD App Registration
+In this step we will create the App registration (and underlying service principal) that your app will use to run the Azure Active Directory non-interactive authentication. In other words, we will need this to get the app to authenticate with their client secret and use the resulting authentication token to access the dataverse.
+1. Go to https://portal.azure.com
+1. Navigate to `Azure Active Directory`
+1. In the `Overview` pane, take note of the `Tenant ID` (you will need it later in this lab)
+1. Navigate to `App registrations`
+1. Click `New registration`
+1. Fill in the form as following
+    - Enter an arbitrary name (for example "my-mc4s-integrated-app")
+    - As Supported account types leave it as single tenant
+    - Leave Redirect URI blank
+    ![Screenshot](/assets/AppRegistration-MSAL-1b.png)
+1. Click `Register`. The app registration will be created and you will be taken to its Overview tab
+1. Take note of the `Application (client) ID` (you will need it later in this lab)
+    ![Screenshot](/assets/AppRegistration-MSAL-2.png)
+1. Click `Certificate & secrets` > `Client secrets` > `New client secret`
+    ![Screenshot](/assets/ADF-AppRegistration2.png)
+1. Enter an arbitrary description, leave the default expiration and click `Add`
+1. Copy and take note of the secret as you will need it later in this lab. You will not be able to retrieve the secret from this page later so please copy it now.
+
 ### Find the endpoint of your dataverse environment
 1. Go to http://make.powerplatform.com
 1. Make sure that you are in the right environment (check the `Environment` badge on the top right)
@@ -11,27 +31,22 @@
 1. Take note of the Web API endpoint (you will need this later in this lab). Copy only the part of the URL from "https:" through ".com" **leaving off the /api/data/v9.x**
     <br/><img alt="Screenshot" src="./assets/PowerApps%20Dev%20Settings2.png" width="400" />
 
-### Create the AAD App Registration
-In this step we will create the App registration (and underlying service principal) that your app will use to run the Azure Active Directory delegate authentication. In other words, we will need this to get the user authenticate with their credentials and use the resulting authentication token to access the dataverse.
-1. Go to https://portal.azure.com
-1. Navigate to `Azure Active Directory`
-1. Navigate to `App registrations`
-1. Click `New registration`
-1. Fill in the form as following
-    - Enter an arbitrary name (for example "my-mc4s-integrated-app")
-    - As Supported account types leave it as single tenant
-    - As Redirect URI, select `Public client/native (mobile & desktop)` and enter `http://localhost`
-    ![Screenshot](/assets/AppRegistration-MSAL-1.png)
-1. Click `Register`. The app registration will be created and you will be taken to its Overview tab
-1. Take note of the `Application (client) ID` (you will need it later in this lab)
-    ![Screenshot](/assets/AppRegistration-MSAL-2.png)
-1. Navigate to `API permissions`, click `Add a permission`, select `APIs my organization uses`, type `dataverse` in the search box and select the `Dataverse` item from the list
-    ![Screenshot](/assets/AppRegistration-MSAL-APIPermission1.png)
-1. Ensure the `user_impersonation` permission is checked and click `Add permission`
-    ![Screenshot](/assets/AppRegistration-MSAL-APIPermission2.png)
-1. At this point you should see the user_impersonation permission in the permissions list
-    ![Screenshot](/assets/AppRegistration-MSAL-APIPermission3.png)
-    > The last three steps are necessary to allow your app to impersonate the logged in user to access the MC4S data in the dataverse.
+### Grant access to dataverse
+In this section we will create an application user linked to the app registration and we will grant access to the dataverse
+
+1. Go to https://admin.powerplatform.microsoft.com/
+1. Navigate to `Environments` and select the environment where your Microsoft Cloud for Sustainability is installed
+1. Take note of your `Environment URL` (you will need this later in this lab). The url will look something like _org12345.crm2.dynamics.com_.
+1. Click `Settings` in the toolbar at the top
+1. Expand `Users + permissions` and click `Application users`
+    ![Screenshot](/assets/ADF-AppUser1.png)
+1. Click `New app user`
+1. Click `Add an app`
+1. From the list, select the app registration that you created previously (for example my-mc4s-integrated-app) and click `Add`
+1. In `Business unit` select the organization that matches the Environment URL of which you have taken note earlier
+1. Click the edit icon on the right of `security roles`
+1. Select `Sustainability all - Read only` from the list and click `Save` and then `Create`
+    > For simplicity we are giving a generic reader role in this lab. However, in a production environment you would create a specific role with only the needed permissions.
 
 ### Create a .NET 6 console app to query the emissions table
 1. Open Visual Studio or Visual Studio Code and create a new .NET 6 Console App
@@ -53,19 +68,19 @@ In this step we will create the App registration (and underlying service princip
                 string resource = "Enter dataverse environment endpoint here";
                 // TODO Specify the AAD app registration id.
                 var clientId = "Enter App ID here";
-                var redirectUri = "http://localhost"; // Loopback for the interactive login.
+                var clientSecret = "Enter client secret here";
+                var tenantId = "Enter tenant id here";
 
                 #region Authentication
-
-                var authBuilder = PublicClientApplicationBuilder.Create(clientId)
-                                .WithAuthority(AadAuthorityAudience.AzureAdMultipleOrgs)
-                                .WithRedirectUri(redirectUri)
+                var authBuilder = ConfidentialClientApplicationBuilder.Create(clientId)
+                                .WithAuthority($"https://login.microsoftonline.com/{tenantId}")
+                                .WithClientSecret(clientSecret)
                                 .Build();
                 var scope = resource + "/.default";
                 string[] scopes = { scope };
 
                 AuthenticationResult token =
-                    authBuilder.AcquireTokenInteractive(scopes).ExecuteAsync().Result;
+                    authBuilder.AcquireTokenForClient(scopes).ExecuteAsync().Result;
                 #endregion Authentication
 
                 #region Client configuration
@@ -120,11 +135,12 @@ In this step we will create the App registration (and underlying service princip
     ```
 1. Replace the placeholder `Enter dataverse environment endpoint here` with the url retrieved earlier in this lab
 1. Replace the placeholder `Enter App ID here` with the app registration id copied earlier in this lab
+1. Replace the placeholder `Enter client secret here` with the client secret created during the app registration earlier in this lab
+1. Replace the placeholder `Enter tenant id here` with the Azure Active Directory ID retrieved earlier in this lab
 1. Add the following NuGet packages:
     - Microsoft.Identity.Client
     - Newtonsoft.Json
     <br/><img alt="Screenshot" src="./assets/MSAL-Packages.png" width="400" />
 1. Run the console app
-1. A browser window will be open to allow you to authenticate
-1. After you authenticate, the console app should list the first 10 records of the Emissions table
-    ![Screenshot](/assets/WebApi-NET6-result.png)
+1. The console app should list the first 10 records of the Emissions table
+    ![Screenshot](/assets/WebApi-NET6-result-non-interactive.png)
