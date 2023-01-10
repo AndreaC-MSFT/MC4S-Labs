@@ -1,16 +1,16 @@
 # Use Microsoft Sustainability Manager to calculate and report emissions from Industrial Processes
-This article describes how to build an example calculation model and emission factor library to use data from `Industrial Process` activity data to report the related carbon emissions. Given the high number of different types of industrial processes and the many methodologies to calculate emissions, Microsoft Sustainability Manager's approach to ingest, calculate and report on industrial processes is intentionally generic, flexible and customizable.
+This article describes how to build an example calculation model and emission factor library to use  `Industrial Process` activity data to report the related carbon emissions. Given the high number of different types of industrial processes and the many methodologies to calculate emissions, Microsoft Sustainability Manager's approach to ingest, calculate and report on industrial processes is intentionally generic, flexible and customizable.
 
 ## Industrial Process Activity Data Table
-The Sustainability Common Data Model (part of Microsoft Cloud for Sustainability) includes the 'Industrial Process' entity. This is the table that Microsoft Sustainability Manager uses as input to calculate industrial process emissions.
-In addition to the columns that are common to all activity data entities (name, Organizational unit, Facility, data quality type, Consumption start and end dates) the Industrial Process table include three key columns:
+The Sustainability Common Data Model (part of Microsoft Cloud for Sustainability) includes the `Industrial Process` entity. This is the table that Microsoft Sustainability Manager uses as an input to calculate industrial process emissions.
+In addition to the columns that are common to all activity data entities (name, organizational unit, facility, data quality type, consumption start and end dates) the Industrial Process table includes three key columns:
 - `Industrial process type` which identify to which industrial process the transaction refers (i.e. Cement Production or Chemical Process). This is important as the calculation engine will use this column to select the correct calculation model and emission factors to use in order to calculate the emissions.
 - `Quantity`. The meaning of this column depends on the type of industrial process and on the calculation method. For example, an organization might decide to calculate their emissions from Cement Production based on the quantity of clinker used in the process. In that case, when `Industrial process type` = `Cement Production` than the `Quantity` column is assumed to refer to the quantity of clinker used.
 
 <br/><img alt="Screenshot" src="./assets/IndustrialProcess-ActivityData.png" width="700" />
 
 
-Some organizations might require more complex calculation methods for their industrial process which might require multiple quantitative data for a single transaction. In such case organizations can either split transactions in multiple `Industrial process` records and use different `Industrial process type`s or extend the data model by adding additional columns to the `Industrial process` table. The additional columns can be used in calculation models withing Microsoft Sustainability Manager
+Some organizations might require more complex calculation methods for their industrial process which might require multiple quantitative data for a single transaction. In such cases, organizations can either split transactions in multiple `Industrial process` records and use different `Industrial process type`s or extend the data model by adding additional columns to the `Industrial process` table. The additional columns can be used in calculation models within Microsoft Sustainability Manager
 
 ## Industrial process types Reference Data
 The Sustainability Common Data Model also includes a reference table called `Industrial process types`. This table includes the items available in the `Industrial process type` column of the `Industrial Process` table.
@@ -24,10 +24,10 @@ In this section we will describe a basic example of calculating emissions for ce
 In this example we will calculate CO2 emissions based on the quantity of clinker used in the process. We will use the emission factor of 0.507 tons of CO2 per ton of clinker.
 
 > ### DISCLAIMER
-> The calculation methodology used in this article is intended as an example to the sole purpose to describe how technically configure Microsoft Sustainability Manager to implement emission calculation for industrial processes. It does NOT constitute functional guidance on how to calculate emissions for cement production. The emission factors included in this article are not guaranteed to be accurate or current.
+> The calculation methodology used in this article is intended as an example with the sole purpose of describing how to technically configure Microsoft Sustainability Manager to implement emission calculation for industrial processes. It does NOT constitute functional guidance on how to calculate emissions for cement production. The emission factors included in this article are not guaranteed to be accurate or current.
 
 ### Step 1 - Industrial process types
-The first tep is adding the industrial process for which we want to calculate emissions to the `Industrial process types` table.
+The first step would be adding the industrial process for which we want to calculate emissions to the `Industrial process types` table.
 In our case, `Cement production` is already included out-of-the-box so we don't need to add it. Otherwise, we would go to `Settings` > `Reference data` > `Industrial process types` and add the name of our industrial process.
 
 ### Step 2 - Factor library
