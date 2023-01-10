@@ -39,22 +39,22 @@ In this article we use a library named _Demo Industrial process factors_.
 
 ### Step 3 - Emission factor
 Within the factor library we need to add our specific emission factor to convert a quantity of clinker into CO2 emissions.
-From the factor library that we created in the previous step, we can go to the `Emission factors` tab and click `new emission factor` to create our factor.
+From the factor library that we created in the previous step, we can go to the `Emission factors` tab and click `New emission factor` to create our factor.
 > Note that emission factors can be also imported from various sources instead of being manually entered.
 
 Key data to add to the emission factor record includes:
 - `Name` - In this example we will use `Cement Production - Emissions from clinker`
 - `Unit` - This is the unit of measure for the input quantity. In our case we want to define _X metric tons of CO2 per 1 metric tons of clinker_ therefore we will set `Unit` = `metricton`. As an example, if we wanted to define _X metric tons of CO2 per 1 kg of clinker_ than we would set `Unit` = `kg`.
     > Notice that the unit of measure in the emission factor does not necessarily need to coincide with the unit in which the activity data are entered or ingested. We could for example define the factor as _kg_ and then ingest industrial process activity data in metric tons, lb, and grams. Microsoft Sustainability Manager's calculation engine will automatically take care of the conversion for each activity data item.
-- `CO2` and `CO2 unit` - This is where we define how much CO2 we emit for 1 ton of clinker. Our example is _0.507 metric ton of CO2 per metric ton of clinker_. Therefore we set `CO2` = `0.5-7` and `CO2 unit` = `metricton`.
-    > In our example we only produce CO2 but other industrial processes might produce other or multiple greenhouse gasses. In that case we would add the quantities and unit of each relevant greenhouse gas in the same emission factor.
+- `CO2` and `CO2 unit` - This is where we define how much CO2 we emit for 1 ton of clinker. Our example is _0.507 metric ton of CO2 per metric ton of clinker_. Therefore we set `CO2` = `0.507` and `CO2 unit` = `metricton`.
+    > In our example we only produce CO2 but other industrial processes might produce other or multiple greenhouse gasses. In that case we would add the quantities and units of each relevant greenhouse gas in the same emission factor.
 
 <img alt="Screenshot" src="./assets/IndustrialProcess-Factor.png" width="700" />
 
 ### Step 4 - Emission factor mapping
 Next we need to indicate in which conditions we want to use the emission factor that we created in the previous step. There are different ways to do that but in this article we will use the `Emission factor mapping` to link our emission factor to the `Industrial process type`.
 In short, we want to instruct Microsoft Sustainability Manager to use our _Cement Production - Emissions from clinker_ emission factor to calculate items in the `Industrial process` table when `Industrial process type` = `Cement production`.
-In order to do that, we go back to our factor library _Demo Industrial process factors_, we open the `Factors mapping` tab and we clink on `New factor mapping`.
+In order to do that, we go back to our factor library _Demo Industrial process factors_, we open the `Factors mapping` tab and we click on `New factor mapping`.
 Key data to add to the emission factor mapping record includes:
 - An arbitrary name
 - `Reference data` section - Here we set the reference data to which our emission factor will be linked. Ultimately this sets the conditions in which the emission factor will be used by the calculation engine. We can define a combination of multiple reference data but in our example we simply select the `Cement production` item from the `Industrial process types` reference table.
@@ -64,18 +64,18 @@ Key data to add to the emission factor mapping record includes:
 <img alt="Screenshot" src="./assets/IndustrialProcess-FactorMapping.png" width="700" />
 
 ### Step 5 - Calculation model
-Next we need to create the calculation model to actual define the emission calculation. In this example we we will leverage the power of the dynamic calculation engine included in Microsoft Sustainability Manager to create a generic model that can be used not only for cement production but for any industrial process.
-> Some organizations might need more complex calculation models for some industrial processes and they might therefore need specific calculation models. Such scenario is also supported and can be configured in a _default + exceptions_ approach. This is out of the scope of this article.
+Next we need to create the calculation model to actually define the emission calculation. In this example we we will leverage the power of the dynamic calculation engine included in Microsoft Sustainability Manager to create a generic model that can be used not only for cement production but for any industrial process.
+> Some organizations might need more complex calculation models for some industrial processes and they might therefore need calculation models specific to processes. Such scenario is also supported and can be configured in a _default + exceptions_ approach. This is out of the scope of this article.
 
 To create our calculation model we go to `Data` > `Calculation models` > `New`
-In the root node of the model, the _Source_ node we need to define:
+In the root node of the model (the _Source_ node) we need to define:
 - `Category name` - this will be the name of the calculation model itself. In our example we will name it `Industrial process by quantity`.
     > The name intentionally does not refer to cement production as the same model can be used for other industrial processes.
-- `Activity data` - this defines the table that will be used as input for the calculation. In our case we will select `Industrial process`.
+- `Activity data` - this defines the table that will be used as an input for the calculation. In our case we will select `Industrial process`.
 
 <img alt="Screenshot" src="./assets/IndustrialProcess-Model1.png" width="500" />
 
-Next we need to add a new calculation node by clicking the `+` icon below the root node and select `Report` among the available type of actions.
+Next we need to add a new calculation node by clicking the `+` icon below the root node and selecting `Report` among the available type of actions.
 
 <img alt="Screenshot" src="./assets/IndustrialProcess-Model2.png" width="500" />
 
@@ -84,7 +84,7 @@ For the newly added _report_ node we need to define the following:
 - `Emission report value` this is the column of the source activity data table (in our case the _Industrial process_ table) from where the input value for the calculation action will be taken. We want to apply our emission factor to the values contained in the `Quantity` column of the `Industrial process table`. So we will select `Quantity`.
 - `Unit` this will define the unit of measure for the input value. We can either select a static value (such as _kg_) or select the column in the source activity data table that will contain the unit of measure. In our case we have the `Quantity unit` column in the `Industrial process` table so that's what we will select.
 - `Emission factor library` - This is the library that contains all the emission factors considered by this model. In our case we will select our `Demo Industrial Process Factors` library.
-- `Emission factor` - Here we could statically select our _Cement Production - Emissions from clinker_ emission factor. But in that case the model would not be generic anymore and we would need to create a calculation model for each emission factor. Instead we just select the column of the source activity data that we want the calculation engine to use to dynamically select the right emission factor based on mappings. In our case we select `Industrial process type`. The calculation engine will read that value for each industrial process record and select the right emission factor based on the defined emission factor mappings linked to the related reference data. When `Industrial process type` = `Cement production` the calculation engine will select our _Cement Production - Emissions from clinker_ emission factor. For other Industrial process types the relevant factors will be selected (provided a mapping exist).
+- `Emission factor` - Here we could statically select our _Cement Production - Emissions from clinker_ emission factor. But in that case the model would not be generic anymore and we would need to create a calculation model for each emission factor. Instead we just select the column of the source activity data that we want to be used by the calculation engine to dynamically determine the right emission factor based on mappings. In our case we select `Industrial process type`. The calculation engine will read that value for each industrial process record and select the right emission factor based on the defined emission factor mappings linked to the related reference data. When `Industrial process type` = `Cement production` then the calculation engine will select our _Cement Production - Emissions from clinker_ emission factor. For other Industrial process types the relevant factors will be selected (provided a mapping exist).
     > Using the `Add emission factor` button we could define a combination of columns to be used to determine the right factor. This is to address more complex scenarios.
 
 Our calculation model is now complete and we can save it.
@@ -92,7 +92,7 @@ Our calculation model is now complete and we can save it.
 <img alt="Screenshot" src="./assets/IndustrialProcess-Model3.png" width="700" />
 
 ### Step 6 - Example activity data
-To verify the configuration we have implemented so far works, we need some example data in our Industrial Process table.
+To verify that the configuration we have implemented so far works, we need some example data in our Industrial Process table.
 In most real-world scenarios, organizations would ingest data from external data sources rather than entering it manually. But for test purpose we will add a fictitious record by going to `Data` > `Activity data` > `Industrial process` > `View` and click `New`.
 Example data:
 - `Name` = `Test Cement Production transaction`
@@ -107,7 +107,7 @@ Example data:
 <br/><img alt="Screenshot" src="./assets/IndustrialProcess-ExampleData.png" width="700" />
 
 ### Step 7 - Calculation profile
-The calculation model in itself is just a definition. In order to actually execute a calculation we need a **calculation profile**. Let's create one to execute our custom calculation model.
+The calculation model in itself is just a definition. In order to actually execute a calculation we need a **calculation profile**. Let's create one to execute our industrial process calculation model.
 
 1. Navigate to `Data` > `Calculation profiles`
 0. Click `New calculation profile`
