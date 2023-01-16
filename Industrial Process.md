@@ -102,7 +102,7 @@ Example data:
 - `Data quality type` = `Actual`
 - `Consumption start date` = _current date_
 - `Consumption end date` = _current date_
-- `Quantity` = `10`
+- `Quantity` = `100`
 - `Quantity unit` = `metricton`
 <br/><img alt="Screenshot" src="./assets/IndustrialProcess-ExampleData.png" width="700" />
 
