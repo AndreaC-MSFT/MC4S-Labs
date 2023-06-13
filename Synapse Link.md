@@ -8,6 +8,7 @@
 1. Go to http://make.powerplatform.com
 1. Make sure that you are in the right environment (check the `Environment` badge on the top right)
 1. Click `Dataverse` > `Azure Synapse Link`
+    > If `Azure Synapse Link` is not visible in teh navigation bar, click `More...` > `Discover` and then select `Azure Synapse Link` under `Data Management`
 1. Click `New Link`
 1. In the `Select storage account` tab, take note of the Azure region. This is the region in which you need to create the Synapse workspace
 ![example screenshot](/assets/Environment%20Region.png)
