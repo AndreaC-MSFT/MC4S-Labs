@@ -1,0 +1,412 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_6892c"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "417e1d20-ed46-4bb1-97a8-51f1dffc539e"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "dst_library_name": {
+                  "title": "Destination library",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Enter the name of the library to which you want to copy the factor mappings",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "src_library_name": {
+                  "title": "Source library",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Enter the name of the library from which you want to copy the factor mappings",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "dst_library_name",
+                "src_library_name"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_new_library": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "03e63128-ef33-4dd3-8a1e-2d39e86c8bb8"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "msdyn_calculationlibraries",
+              "$filter": "msdyn_name eq '@{triggerBody()['dst_library_name']}'"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Check_existence_and_uniqueness_of_the_new_library": {
+          "actions": {},
+          "runAfter": {
+            "Get_new_library": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Terminate": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "f892558c-d971-4920-bc4e-e600976f2af3"
+                },
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "message": "Cannot find a unique library with name '@{triggerBody()['dst_library_name']}'"
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@length(outputs('Get_new_library')?['body/value'])",
+              1
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3639ff47-fa84-4fa3-bedd-553a9a93ec57"
+          },
+          "type": "If"
+        },
+        "Get_old_library": {
+          "runAfter": {
+            "Check_existence_and_uniqueness_of_the_new_library": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5f66687d-b63d-472b-a2c3-feac2d8ab0a7"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "msdyn_calculationlibraries",
+              "$filter": "msdyn_name eq '@{triggerBody()['src_library_name']}'"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Check_existence_and_uniqueness_of_the_old_library": {
+          "actions": {},
+          "runAfter": {
+            "Get_old_library": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Terminate_2": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "d202eef5-1791-4977-8ff8-63c354c4f7bf"
+                },
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "message": "Cannot find a unique library with name '@{triggerBody()['src_library_name']}'"
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@length(outputs('Get_old_library')?['body/value'])",
+              1
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "df8ce2c4-a2d6-4ef8-8815-416a9b50ff7a"
+          },
+          "type": "If"
+        },
+        "Process_source_library": {
+          "foreach": "@outputs('Get_old_library')?['body/value']",
+          "actions": {
+            "Get_source_mappings": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "5742eea6-f279-4a09-b3a1-cd56da7b9a0f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "msdyn_emissionlookups",
+                  "$filter": "_msdyn_calculationlibraryid_value eq '@{items('Process_source_library')?['msdyn_calculationlibraryid']}'"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "For_each_source_mapping": {
+              "foreach": "@outputs('Get_source_mappings')?['body/value']",
+              "actions": {
+                "For_each_destination_library": {
+                  "foreach": "@outputs('Get_new_library')?['body/value']",
+                  "actions": {
+                    "Get_source_factor": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "23f8bfd9-a5b9-44a1-bc08-6809cd13fa9c"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "GetItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "msdyn_emissionfactors",
+                          "recordId": "@items('For_each_source_mapping')?['_msdyn_factorid_value']"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      }
+                    },
+                    "Get_matching_destination_factor": {
+                      "runAfter": {
+                        "Get_source_factor": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d75e7bae-f12e-48b3-8d5e-e85800de6d41"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "msdyn_emissionfactors",
+                          "$filter": "_msdyn_calculationlibraryid_value eq '@{items('For_each_destination_library')?['msdyn_calculationlibraryid']}' and msdyn_name eq '@{outputs('Get_source_factor')?['body/msdyn_name']}'"
+                        },
+                        "authentication": {
+                          "type": "Raw",
+                          "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                        }
+                      }
+                    },
+                    "For_each_matching_destination_factors": {
+                      "foreach": "@outputs('Get_matching_destination_factor')?['body/value']",
+                      "actions": {
+                        "Add_a_new_row": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "7c901d82-6e16-4a50-9dcd-941ddb6f75d7"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "CreateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "msdyn_emissionlookups",
+                              "item/msdyn_calculationlibraryid@odata.bind": "msdyn_calculationlibraries(@{items('For_each_destination_library')?['msdyn_calculationlibraryid']})",
+                              "item/msdyn_name": "@items('For_each_source_mapping')?['msdyn_name']",
+                              "item/msdyn_factorid_emissionfactor@odata.bind": "msdyn_emissionfactors(@{items('For_each_matching_destination_factors')?['msdyn_emissionfactorid']})",
+                              "item/msdyn_description": "@items('For_each_source_mapping')?['msdyn_description']",
+                              "item/msdyn_referencedataid_msdyn_sustainabilityproductidentifier_msdyn_sustainabilityproductidentifier@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproductidentifier'), concat('msdyn_sustainabilityproductidentifiers(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_sustainabilityproduct_msdyn_sustainabilityproduct@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproduct'), concat('msdyn_sustainabilityproducts(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_accommodationtype_msdyn_accommodationtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_accommodationtype'), concat('msdyn_accommodationtypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_Account_account@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_account'), concat('msdyn_accounts(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_businesstraveltype_msdyn_businesstraveltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_businesstraveltype'), concat('msdyn_businesstraveltypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_contractualinstrumenttype_msdyn_contractualinstrumenttype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_contractualinstrumenttype'), concat('msdyn_contractualinstrumenttypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_disposalmethod_msdyn_disposalmethod@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_disposalmethod'), concat('msdyn_disposalmethods(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_employeecommutingtype_msdyn_employeecommutingtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_employeecommutingtype'), concat('msdyn_employeecommutingtypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_facility@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facility'), concat('msdyn_facilities(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_facilitytype_msdyn_facilitytype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilitytype'), concat('msdyn_facilitytypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_facilityannualdetail_msdyn_facilityannualdetail@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilityannualdetail'), concat('msdyn_facilityannualdetails(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_fueltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_fueltype'), concat('msdyn_fueltypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_industrialprocesstype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_industrialprocesstype'), concat('msdyn_industrialprocesstypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_material_msdyn_material@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_material'), concat('msdyn_materials(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_organizationalunitrevenue_msdyn_organizationalunitrevenue@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_organizationalunitrevenue'), concat('msdyn_organizationalunitrevenues(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_sustainabilityorganizationalunit_msdyn_sustainabilityorganizationalunit@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityorganizationalunit'), concat('msdyn_sustainabilityorganizationalunits(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_spendtype_msdyn_spendtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_spendtype'), concat('msdyn_spendtypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_transportmode_msdyn_transportmode@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_transportmode'), concat('msdyn_transportmodes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_valuechainpartner_msdyn_valuechainpartner@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_valuechainpartner'), concat('msdyn_valuechainpartners(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedataid_msdyn_vehicletype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedataid_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_vehicletype'), concat('msdyn_vehicletypes(', items('For_each_source_mapping')?['_msdyn_referencedataid_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_sustainabilityproductidentifier_msdyn_sustainabilityproductidentifier@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproductidentifier'), concat('msdyn_sustainabilityproductidentifiers(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_sustainabilityproduct_msdyn_sustainabilityproduct@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproduct'), concat('msdyn_sustainabilityproducts(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_accommodationtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_accommodationtype'), concat('msdyn_accommodationtypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_Account_account@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_account'), concat('msdyn_accounts(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_businesstraveltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_businesstraveltype'), concat('msdyn_businesstraveltypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_contractualinstrumenttype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_contractualinstrumenttype'), concat('msdyn_contractualinstrumenttypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_disposalmethod@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_disposalmethod'), concat('msdyn_disposalmethods(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_employeecommutingtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_employeecommutingtype'), concat('msdyn_employeecommutingtypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_facility@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facility'), concat('msdyn_facilities(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_facilitytype_msdyn_facilitytype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilitytype'), concat('msdyn_facilitytypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_facilityannualdetail_msdyn_facilityannualdetail@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilityannualdetail'), concat('msdyn_facilityannualdetails(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_fueltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_fueltype'), concat('msdyn_fueltypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_industrialprocesstype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_industrialprocesstype'), concat('msdyn_industrialprocesstypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_material@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_material'), concat('msdyn_materials(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_organizationalunitrevenue@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_organizationalunitrevenue'), concat('msdyn_organizationalunitrevenues(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_sustainabilityorganizationalunit@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityorganizationalunit'), concat('msdyn_sustainabilityorganizationalunits(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_spendtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_spendtype'), concat('msdyn_spendtypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_transportmode@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_transportmode'), concat('msdyn_transportmodes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_valuechainpartner@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_valuechainpartner'), concat('msdyn_valuechainpartners(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata2id_msdyn_vehicletype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata2id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_vehicletype'), concat('msdyn_vehicletypes(', items('For_each_source_mapping')?['_msdyn_referencedata2id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_sustainabilityproductidentifier_msdyn_sustainabilityproductidentifier@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproductidentifier'), concat('msdyn_sustainabilityproductidentifiers(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_sustainabilityproduct_msdyn_sustainabilityproduct@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproduct'), concat('msdyn_sustainabilityproducts(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_accommodationtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_accommodationtype'), concat('msdyn_accommodationtypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_Account_account@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_account'), concat('msdyn_accounts(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_businesstraveltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_businesstraveltype'), concat('msdyn_businesstraveltypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_contractualinstrumenttype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_contractualinstrumenttype'), concat('msdyn_contractualinstrumenttypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_disposalmethod@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_disposalmethod'), concat('msdyn_disposalmethods(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_employeecommutingtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_employeecommutingtype'), concat('msdyn_employeecommutingtypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_facility@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facility'), concat('msdyn_facilities(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_facilitytype_msdyn_facilitytype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilitytype'), concat('msdyn_facilitytypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_facilityannualdetail_msdyn_facilityannualdetail@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilityannualdetail'), concat('msdyn_facilityannualdetails(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_fueltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_fueltype'), concat('msdyn_fueltypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_industrialprocesstype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_industrialprocesstype'), concat('msdyn_industrialprocesstypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_material@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_material'), concat('msdyn_materials(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_organizationalunitrevenue@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_organizationalunitrevenue'), concat('msdyn_organizationalunitrevenues(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_sustainabilityorganizationalunit@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityorganizationalunit'), concat('msdyn_sustainabilityorganizationalunits(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_spendtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_spendtype'), concat('msdyn_spendtypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_transportmode@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_transportmode'), concat('msdyn_transportmodes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_valuechainpartner@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_valuechainpartner'), concat('msdyn_valuechainpartners(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata3id_msdyn_vehicletype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata3id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_vehicletype'), concat('msdyn_vehicletypes(', items('For_each_source_mapping')?['_msdyn_referencedata3id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_sustainabilityproductidentifier_msdyn_sustainabilityproductidentifier@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproductidentifier'), concat('msdyn_sustainabilityproductidentifiers(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_sustainabilityproduct_msdyn_sustainabilityproduct@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityproduct'), concat('msdyn_sustainabilityproducts(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_accommodationtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_accommodationtype'), concat('msdyn_accommodationtypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_Account_account@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_account'), concat('msdyn_accounts(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_businesstraveltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_businesstraveltype'), concat('msdyn_businesstraveltypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_contractualinstrumenttype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_contractualinstrumenttype'), concat('msdyn_contractualinstrumenttypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_disposalmethod@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_disposalmethod'), concat('msdyn_disposalmethods(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_employeecommutingtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_employeecommutingtype'), concat('msdyn_employeecommutingtypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_facility@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facility'), concat('msdyn_facilities(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_facilitytype_msdyn_facilitytype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilitytype'), concat('msdyn_facilitytypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_facilityannualdetail_msdyn_facilityannualdetail@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_facilityannualdetail'), concat('msdyn_facilityannualdetails(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_fueltype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_fueltype'), concat('msdyn_fueltypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_industrialprocesstype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_industrialprocesstype'), concat('msdyn_industrialprocesstypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_material@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_material'), concat('msdyn_materials(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_organizationalunitrevenue@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_organizationalunitrevenue'), concat('msdyn_organizationalunitrevenues(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_sustainabilityorganizationalunit@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_sustainabilityorganizationalunit'), concat('msdyn_sustainabilityorganizationalunits(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_spendtype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_spendtype'), concat('msdyn_spendtypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_transportmode@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_transportmode'), concat('msdyn_transportmodes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_valuechainpartner@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_valuechainpartner'), concat('msdyn_valuechainpartners(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)",
+                              "item/msdyn_referencedata4id_msdyn_vehicletype@odata.bind": "@if(equals(items('For_each_source_mapping')?['_msdyn_referencedata4id_value@Microsoft.Dynamics.CRM.lookuplogicalname'], 'msdyn_vehicletype'), concat('msdyn_vehicletypes(', items('For_each_source_mapping')?['_msdyn_referencedata4id_value'], ')'), null)"
+                            },
+                            "authentication": {
+                              "type": "Raw",
+                              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Get_matching_destination_factor": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6811f929-8294-4a44-b3d4-d0dbdc641ad6"
+                      },
+                      "type": "Foreach"
+                    }
+                  },
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "55f298f4-84ec-475e-a51f-a802ebf7c446"
+                  },
+                  "type": "Foreach"
+                }
+              },
+              "runAfter": {
+                "Get_source_mappings": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2b859d5e-3616-4023-8f1a-e185c01b777e"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Check_existence_and_uniqueness_of_the_old_library": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b874b0ae-d77e-40a3-9a91-b4f72fcde9f1"
+          },
+          "type": "Foreach"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
